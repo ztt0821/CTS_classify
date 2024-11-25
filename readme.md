@@ -1,4 +1,11 @@
-环境参考environment.yaml
+环境参考requirements.txt
+如果还是无法安装请
+```python
+conda install pytorch==2.0.0 torchvision==0.15.0 torchaudio==2.0.0 pytorch-cuda=11.7 -c pytorch -c nvidia
+pip install scipy
+pip install simpleitk
+pip install scikit-learn
+```
 
 主要的代码就是demo.py
 
