@@ -80,8 +80,8 @@ def json_serial(obj):
     if isinstance(obj, Path):
         return str(obj)
 
-def get_opt():
-    opt = parse_opts()
+def get_opt(args=None):
+    opt = parse_opts(args)
     opt.arch = '{}-{}'.format(opt.model, opt.model_depth)
     
     if opt.dilation_flag:
@@ -119,16 +119,9 @@ def inference(data_loader, model, device):
             
             return outputs.cpu().numpy()[0], image_path[0]
 
-def main_worker(opt):
-    # 创建模型
-    model = generate_model(opt)
-    if opt.resume_path is not None:
-        model = resume_model(opt.resume_path, opt.arch, model)
-    model = make_data_parallel(model, opt.distributed, opt.device)
-    
+def main_worker(opt, model):
     # 获取数据加载器
     inference_loader = get_inference_utils(opt.image_path)
-    
     # 进行推理
     prediction, image_path = inference(inference_loader, model, opt.device)
     print(f"Image path: {image_path}")
@@ -137,19 +130,26 @@ def main_worker(opt):
     # 修改输出逻辑
     class_name = "normal" if predicted_class == 1 else "abnormal"
     print(f"Predicted class: {class_name} (class {predicted_class})")
-    
-    return prediction
+    return prediction, class_name
 
-if __name__ == '__main__':
-    opt = get_opt()
+def get_model(args=None):
+    opt = get_opt(args)
     opt.device = torch.device('cpu' if opt.no_cuda else 'cuda')
     random.seed(opt.manual_seed)
     np.random.seed(opt.manual_seed)
     torch.manual_seed(opt.manual_seed)
+    model = generate_model(opt)
+    if opt.resume_path is not None:
+        model = resume_model(opt.resume_path, opt.arch, model)
+    model = make_data_parallel(model, opt.distributed, opt.device)
+    return model
+
+def helper(model, args=None):
+    opt = get_opt(args)
+    opt.device = torch.device('cpu' if opt.no_cuda else 'cuda')
     if not opt.no_cuda:
         cudnn.benchmark = True
     if opt.accimage:
         torchvision.set_image_backend('accimage')
-    
     # 运行推理
-    main_worker(opt)
+    return main_worker(opt, model)
