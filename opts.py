@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 
 
-def parse_opts():
+def parse_opts(args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('--root_path',
                         default='/media/ttzhang/T7/CTS_final_dataset',
@@ -160,6 +160,6 @@ def parse_opts():
                         type=int,
                         help='number of nodes for distributed training')
 
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     return args
