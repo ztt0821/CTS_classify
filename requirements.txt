@@ -4,3 +4,4 @@ SimpleITK==2.4.0
 numpy==1.24.3
 Flask
 Flask-Login
+openpyxl

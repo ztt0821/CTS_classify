@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<style>
+    /* styles.css */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border: 1px solid lightgray;
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: lightgray;
+}
+</style>
+
+<body>
+  <table>
+    <thead>
+      <tr>
+        <th>编号姓名</th>
+        <th>检测序列</th>
+        <th>CTS筛查结果</th>
+        <th>是否质疑</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td rowspan="4">第一层文件夹名</td>
+        <td>第四层文件夹名1</td>
+        <td>低风险</td>
+        <td rowspan="4">否</td>
+      </tr>
+      <tr>
+        <td>第四层文件夹名2</td>
+        <td>低风险</td>
+      </tr>
+      <tr>
+        <td>第四层文件夹名3</td>
+        <td>低风险</td>
+      </tr>
+      <tr>
+        <td>第四层文件夹名4</td>
+        <td>低风险</td>
+      </tr>
+      <tr>
+        <td rowspan="4">第一层文件夹名</td>
+        <td>第四层文件夹名1</td>
+        <td>低风险</td>
+        <td rowspan="4">是</td>
+      </tr>
+      <tr>
+        <td>第四层文件夹名2</td>
+        <td>高风险</td>
+      </tr>
+      <tr>
+        <td>第四层文件夹名3</td>
+        <td>低风险</td>
+      </tr>
+      <tr>
+        <td>第四层文件夹名4</td>
+        <td>低风险</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+
+</html>

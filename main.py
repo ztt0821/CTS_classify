@@ -1,16 +1,21 @@
-from flask import Flask, render_template, redirect, url_for, request, jsonify
+from flask import Flask, render_template, redirect, url_for, request, jsonify, make_response
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import timedelta
-import os
+import os, json
 from datetime import datetime
 from demo import helper, get_model
+from collections import defaultdict
+import shutil
+from openpyxl import Workbook
+from io import BytesIO
 
 # 初始化 Flask 和 Flask-Login
 app = Flask(__name__, template_folder='./templates', static_folder='./static')
+app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024  # 限制上传文件大小为 5MB
 app.secret_key = '123456'  # 用于会话加密
 # 设置会话过期时间（例如 30 分钟）
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+# app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
 login_manager = LoginManager()
 login_manager.init_app(app)
 model, users = None, None
@@ -90,45 +95,166 @@ def unauthorized():
 def detect():
     return render_template('pages/classify.html')  # 假设这是检测页面
 
+# def parseDCMDirectory(files):
+#     # 一共四层目录，第一层为病人名称，第二层为病人序号，第三层为固定名称US，第四层为图像序号，第四层的目录下面都为.dcm文件
+#     # 例如：./static/uploads/病人1/1/US/1/1.dcm
+#     # save到指定的目录下面，返回所有的第四层文件序号的列表
+#     dcm_paths = defaultdict(str)
+#     for file in files:
+#         file_names = file.filename.split('/')[1:]
+#         print(file_names)
+#         if len(file_names) != 5 or not file_names[-1].endswith('.dcm'):
+#             continue
+#         patient_name = file_names[0]
+#         patient_id = file_names[1]
+#         us_name = file_names[2]
+#         image_id = file_names[3]
+#         us_dir = os.path.join(app.config['UPLOAD_FOLDER'], patient_name, patient_id, us_name, image_id)
+#         os.makedirs(us_dir, exist_ok=True)
+#         file.save(os.path.join(us_dir, file_names[-1]))
+#         # dcm_paths.add(us_dir)
+#         dcm_paths['/'.join(file_names[:-1])] = us_dir
+#     return dcm_paths
+
+def parseDCMDirectory(parent_path, files):
+    # 一共四层目录，第一层为病人名称，第二层为病人序号，第三层为固定名称US，第四层为图像序号，第四层的目录下面都为.dcm文件
+    # 例如：./static/uploads/病人1/1/US/1/1.dcm
+    # save到指定的目录下面，返回所有的第四层文件序号的列表
+    dcm_paths = defaultdict(str)
+    for file in files:
+        file_names = file.split('/')[1:]
+        print(file_names)
+        if len(file_names) != 5 or not file_names[-1].endswith('.dcm'):
+            continue
+        dcm_paths['/'.join(file_names[:-1])] = os.path.join(parent_path, *file_names[:-1])
+    return dcm_paths
+
 @app.route('/upload', methods=['POST'])
 def upload():
-    files = request.files.getlist("file")
-    if not files:
-        return jsonify({"error": "没有上传文件"}), 400
-    # 判断是否是多个文件，且是否每个文件都是.dcm，或者只有一个文件且是.nii.gz
-    if len(files) > 1:
-        if not all(file.filename.endswith('.dcm') for file in files):
-            return jsonify({"error": "如果上传多个文件必须都得是.dcm的文件"}), 400
-    elif len(files) == 1:
-        if not files[0].filename.endswith('.nii.gz'):
-            return jsonify({"error": "如果只上传一个文件必须是.nii.gz的文件"}), 400
-    # 符合条件，继续后续逻辑
-    if len(files) == 1:
-        file = files[0]
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(file_path)
-    else:
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], datetime.now().strftime('%Y-%m-%d-%H-%M-%S-') + 'dcm')
-        os.makedirs(file_path, exist_ok=True)
-        for file in files:
-            file.save(os.path.join(file_path, file.filename))
+    parent_path = request.form["parent_path"]
+    filenames = json.loads(request.form["filenames"])
+    print(parent_path, filenames)
+    dcm_paths = parseDCMDirectory(parent_path, filenames)
+    result = {}
     try:
-        _, className = helper(model, ['--resume_path', os.path.join(app.static_folder, 'resources', 'model_weight/save_96.pth'),
-                        '--image_path', file_path])
-        result = datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' ' + className + '\n'
-        with open(os.path.join(app.static_folder, 'resources', 'results.txt'), "a") as f:
-            f.write(result)
-        # 删除上传的文件
-        if len(files) == 1:
-            os.remove(file_path)
-        else:
-            for file in files:
-                os.remove(os.path.join(file_path, file.filename))
-            os.rmdir(file_path)
-        return jsonify({"message": "Files accepted", "result": result}), 200
+        for name, dcm_path in dcm_paths.items():
+            _, className = helper(model, ['--resume_path', os.path.join(app.static_folder, 'resources', 'model_weight/save_96.pth'),
+                        '--image_path', dcm_path])
+            paitent_name = name.split('/')[0]
+            seq_name = name.split('/')[-1]
+            patient_id = name.split('/')[1]
+            if paitent_name not in result:
+                result[paitent_name] = {
+                    "name": paitent_name,
+                    "paient_id": patient_id,
+                    "res": className,
+                    "ok": True,
+                    "seq": [{
+                        "name": seq_name,
+                        "class": className
+                    }]
+                }
+            else:
+                result[paitent_name]["ok"] &= className == result[paitent_name]["res"]
+                result[paitent_name]["seq"].append({
+                    "name": seq_name,
+                    "class": className
+                })
+        for dirName in os.listdir(app.config['UPLOAD_FOLDER']):
+            shutil.rmtree(os.path.join(app.config['UPLOAD_FOLDER'], dirName))  
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 500
+    return jsonify({"message": "Files accepted", "result": list(result.values())}), 200
+
+# @app.route('/upload', methods=['POST'])
+# def upload():
+#     files = request.files.getlist("file")
+#     print(files)
+#     if not files:
+#         return jsonify({"error": "没有上传文件"}), 400
+#     # 判断是否是多个文件，且是否每个文件都是.dcm，或者只有一个文件且是.nii.gz
+#     if len(files) > 1:
+#         if not all(file.filename.endswith('.dcm') for file in files):
+#             return jsonify({"error": "如果上传多个文件必须都得是.dcm的文件"}), 400
+#     elif len(files) == 1:
+#         if not files[0].filename.endswith('.nii.gz'):
+#             return jsonify({"error": "如果只上传一个文件必须是.nii.gz的文件"}), 400
+#     # 符合条件，继续后续逻辑
+#     if len(files) == 1:
+#         file = files[0]
+#         file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+#         file.save(file_path)
+#         try:
+#             _, className = helper(model, ['--resume_path', os.path.join(app.static_folder, 'resources', 'model_weight/save_96.pth'),
+#                             '--image_path', file_path])
+#             result = datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' ' + className + '\n'
+#             with open(os.path.join(app.static_folder, 'resources', 'results.txt'), "a") as f:
+#                 f.write(result)
+#             # 删除上传的文件
+#             os.remove(file_path)
+#         except Exception as e:
+#             print(e)
+#             return jsonify({"error": str(e)}), 500
+#     else:
+#         # file_path = os.path.join(app.config['UPLOAD_FOLDER'], datetime.now().strftime('%Y-%m-%d-%H-%M-%S-') + 'dcm')
+#         # os.makedirs(file_path, exist_ok=True)
+#         # for file in files:
+#         #     file.save(os.path.join(file_path, file.filename))
+#         dcm_paths = parseDCMDirectory(files)
+#         result = {}
+#         try:
+#             for name, dcm_path in dcm_paths.items():
+#                 _, className = helper(model, ['--resume_path', os.path.join(app.static_folder, 'resources', 'model_weight/save_96.pth'),
+#                             '--image_path', dcm_path])
+#                 paitent_name = name.split('/')[0]
+#                 seq_name = name.split('/')[-1]
+#                 patient_id = name.split('/')[1]
+#                 if paitent_name not in result:
+#                     result[paitent_name] = {
+#                         "name": paitent_name,
+#                         "paient_id": patient_id,
+#                         "res": className,
+#                         "ok": True,
+#                         "seq": [{
+#                             "name": seq_name,
+#                             "class": className
+#                         }]
+#                     }
+#                 else:
+#                     result[paitent_name]["ok"] &= className == result[paitent_name]["res"]
+#                     result[paitent_name]["seq"].append({
+#                         "name": seq_name,
+#                         "class": className
+#                     })
+#             for dirName in os.listdir(app.config['UPLOAD_FOLDER']):
+#                 shutil.rmtree(os.path.join(app.config['UPLOAD_FOLDER'], dirName))  
+
+#         except Exception as e:
+#             print(e)
+#             return jsonify({"error": str(e)}), 500
+        
+#         return jsonify({"message": "Files accepted", "result": list(result.values())}), 200
+
+@app.route('/download', methods=['POST'])
+@login_required
+def submit_form():
+    form_data = request.form.to_dict()
+    wb = Workbook()
+    ws = wb.active
+    headers = list(json.loads(form_data["headers"]))
+    ws.append(headers)
+    data = list(json.loads(form_data["data"]))
+    for v in data:
+        ws.append(list(json.loads(v)))
+    excel_buffer = BytesIO()
+    wb.save(excel_buffer)
+    excel_buffer.seek(0)
+    response = make_response(excel_buffer.getvalue())
+    now = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
+    response.headers['Content-Disposition'] = f"attachment; filename={now}.xlsx"
+    response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    return response
 
 # 记录页面（登录后才能访问）
 @app.route('/api/get_results')

@@ -15,12 +15,22 @@
         <div class="panel">
             <h2>输入图像</h2>
             <!-- <div > -->
+                
             <form id="uploadForm" class="image-upload" enctype="multipart/form-data">
-                <input type="file" id="file" name="file" accept=".nii.gz,.dcm" multiple required style="opacity: 0; position: absolute; z-index: -1;">
+                <!-- <input type="file" id="file" name="file" webkitdirectory multiple required style="opacity: 0; position: absolute; z-index: -1;">
                 <button id="select" class="upload-btn" type="button">
                     选择图像文件
-                </button>
-                <strong>注：如果想要上传文件夹，可以进入想要上传的文件夹内，通过ctrl+a全选上传多个文件</strong>
+                </button> -->
+                <div>
+                    <h3>文件夹所在的绝对路径</h3>
+                    <input class="parent-path-input" type="text" id="parent_path" required>
+                </div>
+                <div id="dropZone">
+                    <div class="drop-text">拖拽文件到此处上传</div>
+                    <div class="directories">
+                    </div>
+                </div>
+                <!-- <strong>注：如果想要上传文件夹，可以进入想要上传的文件夹内，通过ctrl+a全选上传多个文件</strong> -->
                 <strong id="file-name"></strong>
                 <button type="submit" class="upload-btn">上传图像文件</button>
                 <button id="logout" type="button" class="upload-btn">退出登录</button>
@@ -31,8 +41,21 @@
             <h2>分析结果</h2>
             <div class="result-content" id="results">
                 <!-- 这里显示分析结果 -->
+                <table border="1">
+                    <thead>
+                        <tr>
+                            <th>编号姓名</th>
+                            <th>检测序列</th>
+                            <th>CTS筛查结果</th>
+                            <th>是否质疑</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+            </table>
             </div>
         </div>
+
+        <div class="download">下载数据</div>
         
     </div>
     <!-- 黑色遮罩 -->

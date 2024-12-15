@@ -42,6 +42,7 @@ h1 {
   flex: 1;
   overflow-y: auto;
   white-space: pre-line;
+  text-align: center;
 }
 .result-content span:first-of-type {
   color: red; /* 第一行文字红色 */
@@ -76,4 +77,72 @@ h1 {
   color: white;
   font-size: 20px;
   font-weight: bold;
+}
+.directories {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  min-height: 200px;
+}
+.directory {
+  width: 20%;
+  height: 150px;
+  text-align: center;
+  font-size: 10px;
+  word-wrap: break-word;  /* 强制换行 */
+  white-space: normal;    /* 允许换行 */
+}
+.directory-image {
+  width: 75%;
+  height: 50%;
+  object-fit: cover;
+}
+#dropZone {
+  width: 100%;
+  height: 300px;
+  border: 2px dashed #ccc;
+  /* text-align: center;
+  line-height: 200px; */
+  margin-top: 20px;
+}
+.drop-text {
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  color:rgba(0, 0, 0, 0.1);
+}
+th,
+td {
+  border: 1px solid white;
+  padding: 8px;
+  text-align: left;
+  background-color: #ccd2d8;
+}
+th {
+  background-color: #156082;
+  color: white;
+}
+table {
+  border-collapse: collapse;
+  width: 80%;
+}
+
+.download {
+  position: relative;
+  top: 15%;
+  right: 16%;
+  height: 30px;
+  color: black;
+}
+
+.download:hover {
+  cursor: pointer;
+  color: #3498db;
+}
+
+.parent-path-input {
+  border: 2px solid #ccc;
 }
