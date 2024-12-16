@@ -12,7 +12,7 @@ from io import BytesIO
 
 # 初始化 Flask 和 Flask-Login
 app = Flask(__name__, template_folder='./templates', static_folder='./static')
-app.config['MAX_CONTENT_LENGTH'] = 512 * 1024 * 1024  # 限制上传文件大小为 5MB
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024 * 1024  # 限制上传文件大小为 5MB
 app.secret_key = '123456'  # 用于会话加密
 # 设置会话过期时间（例如 30 分钟）
 # app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
@@ -123,7 +123,7 @@ def parseDCMDirectory(parent_path, files):
     dcm_paths = defaultdict(str)
     for file in files:
         file_names = file.split('/')[1:]
-        print(file_names)
+        # print(file_names)
         if len(file_names) != 5 or not file_names[-1].endswith('.dcm'):
             continue
         dcm_paths['/'.join(file_names[:-1])] = os.path.join(parent_path, *file_names[:-1])
@@ -133,7 +133,7 @@ def parseDCMDirectory(parent_path, files):
 def upload():
     parent_path = request.form["parent_path"]
     filenames = json.loads(request.form["filenames"])
-    print(parent_path, filenames)
+    # print(parent_path, filenames)
     dcm_paths = parseDCMDirectory(parent_path, filenames)
     result = {}
     try:

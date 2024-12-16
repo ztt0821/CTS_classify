@@ -7,7 +7,7 @@ body {
 .container {
   display: flex;
   gap: 20px;
-  height: calc(100vh - 100px);
+  min-height: calc(100vh - 100px);
 }
 .panel {
   flex: 1;
@@ -30,7 +30,7 @@ h1 {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
 }
 .image-preview {
@@ -43,6 +43,7 @@ h1 {
   overflow-y: auto;
   white-space: pre-line;
   text-align: center;
+  margin-left: 20px;
 }
 .result-content span:first-of-type {
   color: red; /* 第一行文字红色 */
@@ -101,7 +102,7 @@ h1 {
 }
 #dropZone {
   width: 100%;
-  height: 300px;
+  min-height: 300px;
   border: 2px dashed #ccc;
   /* text-align: center;
   line-height: 200px; */
@@ -132,8 +133,8 @@ table {
 
 .download {
   position: relative;
-  top: 15%;
-  right: 16%;
+  top: 40px;
+  left: 20px;
   height: 30px;
   color: black;
 }
